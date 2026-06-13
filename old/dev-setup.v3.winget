@@ -1,0 +1,231 @@
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+metadata:
+  winget:
+    processor:
+      identifier: dscv3
+
+resources:
+  # --- Core packages --------------------------------------------------------
+  - type: Microsoft.WinGet/Package
+    name: Git
+    properties:
+      id: Git.Git
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install Git for Windows
+      winget:
+        securityContext: elevated
+
+  - type: Microsoft.WinGet/Package
+    name: WindowsTerminal
+    properties:
+      id: Microsoft.WindowsTerminal
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install Windows Terminal
+
+  - type: Microsoft.WinGet/Package
+    name: PowerShell7
+    properties:
+      id: Microsoft.PowerShell
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install PowerShell 7
+      winget:
+        securityContext: elevated
+
+  - type: Microsoft.WinGet/Package
+    name: AzureCLI
+    properties:
+      id: Microsoft.AzureCLI
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install Azure CLI
+      winget:
+        securityContext: elevated
+
+  - type: Microsoft.WinGet/Package
+    name: PodmanDesktop
+    properties:
+      id: RedHat.Podman-Desktop
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install Podman Desktop
+      winget:
+        securityContext: elevated
+
+  - type: Microsoft.WinGet/Package
+    name: WSLPackage
+    properties:
+      id: Microsoft.WSL
+      source: winget
+      useLatest: true
+    metadata:
+      description: Install or update WSL package
+      winget:
+        securityContext: elevated
+
+  # VS Code with Explorer context menu enabled via installer tasks
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: InstallVSCodeWithContextMenu
+    properties:
+      executable: winget
+      arguments:
+        - install
+        - --id
+        - Microsoft.VisualStudioCode
+        - -e
+        - --override
+        - /VERYSILENT /NORESTART /MERGETASKS=!runcode,addcontextmenufiles,addcontextmenufolders
+    metadata:
+      description: Install VS Code with Open with Code context menu entries
+      winget:
+        securityContext: elevated
+
+  # --- Install adapted DSC module for VS Code extension management ----------
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: InstallVSCodeDscModule
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -ExecutionPolicy
+        - Bypass
+        - -Command
+        - Install-PSResource -Name Microsoft.VSCode.Dsc -Repository PSGallery -TrustRepository -Quiet
+    metadata:
+      description: Install Microsoft.VSCode.Dsc PowerShell resource module
+      winget:
+        securityContext: elevated
+
+  # --- VS Code extensions ---------------------------------------------------
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeRemoteWsl
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: ms-vscode-remote.remote-wsl
+      Exist: true
+    metadata:
+      description: Install Remote - WSL extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeRemoteContainers
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: ms-vscode-remote.remote-containers
+      Exist: true
+    metadata:
+      description: Install Dev Containers extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeRemoteSsh
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: ms-vscode-remote.remote-ssh
+      Exist: true
+    metadata:
+      description: Install Remote - SSH extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodePowerShell
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: ms-vscode.powershell
+      Exist: true
+    metadata:
+      description: Install PowerShell extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeYaml
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: redhat.vscode-yaml
+      Exist: true
+    metadata:
+      description: Install YAML extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeTerraform
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: hashicorp.terraform
+      Exist: true
+    metadata:
+      description: Install Terraform extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeGitlens
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: eamodio.gitlens
+      Exist: true
+    metadata:
+      description: Install GitLens
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeEditorConfig
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: EditorConfig.EditorConfig
+      Exist: true
+    metadata:
+      description: Install EditorConfig extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeCopilot
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: GitHub.copilot
+      Exist: true
+    metadata:
+      description: Install GitHub Copilot extension
+
+  - type: Microsoft.VSCode.Dsc/VSCodeExtension
+    name: VscodeCopilotChat
+    dependsOn:
+      - '[resourceId(''InstallVSCodeDscModule'')]'
+      - '[resourceId(''InstallVSCodeWithContextMenu'')]'
+    properties:
+      Name: GitHub.copilot-chat
+      Exist: true
+    metadata:
+      description: Install GitHub Copilot Chat extension
+
+  # --- WSL / Ubuntu bootstrap ----------------------------------------------
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: InstallUbuntu2404
+    dependsOn:
+      - '[resourceId(''WSLPackage'')]'
+    properties:
+      executable: wsl
+      arguments:
+        - --install
+        - -d
+        - Ubuntu-24.04
+    metadata:
+      description: Install Ubuntu 24.04 for WSL if not already present
+      winget:
+        securityContext: elevated

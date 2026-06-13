@@ -1,0 +1,86 @@
+#################################################################################
+# Configure Windows and Personal Setup
+################################################################################
+$schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
+metadata:
+  winget:
+    processor:
+      identifier: "dscv3"
+resources:
+- name: PowerShell
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Microsoft.PowerShell"
+    source: "winget"
+- name: DSC
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Microsoft.DSC"
+    source: "winget"
+- name: Microsoft.Windows.Settings.InstallModule
+  type: Microsoft.DSC.Transitional/RunCommandOnSet
+  dependsOn:
+  - PowerShell
+  properties:
+    arguments:
+    - "-NoProfile"
+    - "-NoLogo"
+    - "-Command"
+    - "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { Install-Module
+      -Name Microsoft.Windows.Settings -Confirm:$False -Force -AllowPrerelease -AllowClobber
+      }"
+    executable: "pwsh"
+- name: Microsoft.Windows.Settings.WindowsSettings.Configure
+  type: Microsoft.Windows.Settings/WindowsSettings
+  metadata:
+    winget:
+      securityContext: "elevated"
+  dependsOn:
+  - Microsoft.Windows.Settings.InstallModule
+  properties:
+    SystemColorMode: "Dark"
+    DeveloperMode: false
+    TaskbarAlignment: "Middle"
+    AppColorMode: "Dark"
+- name: UserSettingsFile
+  type: Microsoft.WinGet/UserSettingsFile
+  properties:
+    settings: {}
+- name: AdminSettings
+  type: Microsoft.WinGet/AdminSettings
+  metadata:
+    winget:
+      securityContext: "elevated"
+  properties:
+    settings:
+      LocalManifestFiles: false
+      ProxyCommandLineOptions: false
+      BypassCertificatePinningForMicrosoftStore: false
+      InstallerHashOverride: false
+      LocalArchiveMalwareScanOverride: false
+# Install Software
+- name: JGraph.Draw
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "JGraph.Draw"
+    source: "winget"
+- name: 7zip
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "7zip.7zip"
+    source: "winget"
+- name: OneDrive
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Microsoft.OneDrive"
+    source: "winget"
+- name: FoxitReader
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Foxit.FoxitReader"
+    source: "winget"
+- name: Logitech.OptionsPlus
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Logitech.OptionsPlus"
+    source: "winget"
