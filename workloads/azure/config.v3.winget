@@ -1,6 +1,7 @@
-# Dev-Config — Developer Workstation Setup
-# Apply with: winget configure -f dev.v3.winget --accept-configuration-agreements --disable-interactivity
-
+#################################################################################
+# Azure Setup
+# Apply with: winget configure -f config.v3.winget --accept-configuration-agreements --disable-interactivity
+################################################################################
 $schema: https://raw.githubusercontent.com/PowerShell/DSC/main/schemas/2023/08/config/document.json
 metadata:
   winget:
@@ -8,7 +9,7 @@ metadata:
       identifier: "dscv3"
 resources:
 # =============================================================================
-# Software — Applications, Tools, Runtimes, SDKs, CLIs, etc.
+# Software
 # =============================================================================
 - name: AzureCLI
   type: Microsoft.WinGet/Package
@@ -27,19 +28,3 @@ resources:
   properties:
     id: "Microsoft.Azure.DataStudio"
     source: "winget"
-
-- name: Foxit.FoxitReader
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Foxit.FoxitReader"
-    source: "winget"
-
-- name: VisualStudio
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.VisualStudio.Enterprise"
-    source: "winget"
-
-# =============================================================================
-# Registry — HKLM keys (elevated, native v3 Microsoft.Windows/Registry)
-# =============================================================================
