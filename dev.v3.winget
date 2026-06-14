@@ -284,6 +284,14 @@ resources:
     properties:
       id: "Microsoft.Coreutils"
       source: "winget"
+  
+  - name: JQ
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - PowerShell
+    properties:
+      id: "jqlang.jq"
+      source: "winget"
 
   - name: Git
     type: Microsoft.WinGet/Package
@@ -429,26 +437,6 @@ resources:
         DWord: 0
     metadata:
       description: Set system theme to dark (disable light theme)
-
-  #- type: Microsoft.Windows/Registry
-  #  name: AccentColorEnable
-  #  properties:
-  #    keyPath: HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
-  #    valueName: ColorPrevalence
-  #    valueData:
-  #      DWord: 1
-  #  metadata:
-  #    description: Enable accent color on Start and taskbar
-  #
-  #- type: Microsoft.Windows/Registry
-  #  name: AccentColorValue
-  #  properties:
-  #    keyPath: HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Accent
-  #    valueName: AccentColor
-  #    valueData:
-  #      DWord: 0xFF008F00
-  #  metadata:
-  #    description: Set Windows accent color (ARGB)
 
   # OS
   # ------------------------------------------------------------------------------
@@ -745,8 +733,74 @@ resources:
   # Software Configuration
   # =============================================================================
 
-  # Visual Studio Code Settings (settings.json)
+  # Visual Studio Code Settings (settings.json) & Extensions
   # ------------------------------------------------------------------------------
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: SetVSCodeSettingsJson
+    dependsOn:
+      - VisualStudioCode
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -ExecutionPolicy
+        - Bypass
+        - -Command
+        - |
+          $ErrorActionPreference = 'Stop'
+          $fontFamily   = 'Cascadia Mono NF'
+          $settingsPath = Join-Path $env:APPDATA 'Code\User\settings.json'
+          $settingsDir  = Split-Path $settingsPath -Parent
+          if (-not (Test-Path $settingsDir)) { New-Item -ItemType Directory -Path $settingsDir -Force | Out-Null }
+
+          $json = @{}
+          if (Test-Path $settingsPath) {
+            $raw = Get-Content $settingsPath -Raw
+            $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+            $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+            if (-not [string]::IsNullOrWhiteSpace($clean)) {
+              try {
+                $parsed = $clean | ConvertFrom-Json -AsHashtable
+                if ($null -ne $parsed -and $parsed -is [hashtable]) { $json = $parsed }
+              } catch { }
+            }
+          }
+
+          $json['terminal.integrated.fontFamily'] = $fontFamily
+          $json | ConvertTo-Json -Depth 20 | Set-Content $settingsPath -Encoding utf8
+    metadata:
+      description: Set VS Code settings.json
+
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: VSCodeExtensions
+    dependsOn:
+      - VisualStudioCode
+    properties:
+      executable: pwsh
+      arguments:
+        - -NoProfile
+        - -ExecutionPolicy
+        - Bypass
+        - -Command
+        - |
+          $ErrorActionPreference = 'Stop'
+          $extensions = @(
+            'ms-vscode-remote.vscode-remote-extensionpack',
+            'redhat.vscode-yaml',
+            'GitHub.copilot',
+            'GitHub.copilot-chat',
+            'ms-azuretools.vscode-containers',
+            'mhutchie.git-graph',
+            'github.vscode-pull-request-github',
+            'github.vscode-github-actions',
+            'davidanson.vscode-markdownlint'
+          )
+
+          foreach ($ext in $extensions) {
+            code --install-extension $ext --force
+          }
+    metadata:
+      description: Install VS Code extensions via VS Code CLI
 
   # NPM && NPM Global Packages
   # ------------------------------------------------------------------------------
