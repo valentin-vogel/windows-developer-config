@@ -7,675 +7,746 @@ metadata:
     processor:
       identifier: "dscv3"
 resources:
+  # =============================================================================
+  # Terminal, PowerShell 7 and DSC
+  # =============================================================================
+  - name: WindowsTerminal
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Microsoft.WindowsTerminal
+      source: winget
+  - name: PowerShell
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.PowerShell"
+      source: "winget"
+  - name: DSC
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.DSC"
+      source: "winget"
 
-# =============================================================================
-# Terminal, PowerShell 7 and DSC
-# =============================================================================
-- name: WindowsTerminal
-  type: Microsoft.WinGet/Package
-  properties:
-    id: Microsoft.WindowsTerminal
-    source: winget
-- name: PowerShell
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.PowerShell"
-    source: "winget"
-- name: DSC
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.DSC"
-    source: "winget"
+  # =============================================================================
+  # Install Cascadia Code Nerd Fonts
+  # =============================================================================
+  - type: Microsoft.DSC.Transitional/PowerShellScript
+    name: InstallCascadiaCodeNerdFonts
+    dependsOn:
+      - PowerShell
+    properties:
+      getScript: |
+        $fontsDir    = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+        $wantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
+        $regPath     = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+        $regValues   = @(
+            (Get-ItemProperty $regPath -EA SilentlyContinue).PSObject.Properties |
+            Where-Object Name -notin 'PSPath','PSParentPath','PSChildName','PSDrive','PSProvider' |
+            Select-Object -ExpandProperty Value
+        )
+        $filesOk = -not ($wantedFonts | Where-Object { -not (Test-Path (Join-Path $fontsDir $_)) })
+        $regOk   = -not ($wantedFonts | Where-Object { $fn = $_; -not ($regValues | Where-Object { $_ -like "*\$fn" }) })
+        return @{ filesInstalled = $filesOk; registryEntries = $regOk }
+      testScript: |
+        $fontsDir    = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+        $wantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
+        $regPath     = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+        $regValues   = @(
+            (Get-ItemProperty $regPath -EA SilentlyContinue).PSObject.Properties |
+            Where-Object Name -notin 'PSPath','PSParentPath','PSChildName','PSDrive','PSProvider' |
+            Select-Object -ExpandProperty Value
+        )
+        $filesOk = -not ($wantedFonts | Where-Object { -not (Test-Path (Join-Path $fontsDir $_)) })
+        $regOk   = -not ($wantedFonts | Where-Object { $fn = $_; -not ($regValues | Where-Object { $_ -like "*\$fn" }) })
+        return ($filesOk -and $regOk)
+      setScript: |
+        $ErrorActionPreference = 'Stop'
 
-# =============================================================================
-# Windows Settings
-# =============================================================================
-- name: Microsoft.Windows.Settings.InstallModule
-  type: Microsoft.DSC.Transitional/RunCommandOnSet
-  dependsOn:
-  - PowerShell
-  properties:
-    arguments:
-    - "-NoProfile"
-    - "-NoLogo"
-    - "-Command"
-    - "if (-not (Get-Module -ListAvailable -Name Microsoft.Windows.Settings)) { Install-Module
-      -Name Microsoft.Windows.Settings -Confirm:$False -Force -AllowPrerelease -AllowClobber
-      }"
-    executable: "pwsh"
-- name: Microsoft.Windows.Settings.WindowsSettings.Configure
-  type: Microsoft.Windows.Settings/WindowsSettings
-  metadata:
-    winget:
-      securityContext: "elevated"
-  dependsOn:
-  - Microsoft.Windows.Settings.InstallModule
-  properties:
-    SystemColorMode: "Dark"
-    DeveloperMode: false
-    TaskbarAlignment: "Middle"
-    AppColorMode: "Dark"
+        $Version     = '2407.24'
+        $WantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
+        $zipUrl      = "https://github.com/microsoft/cascadia-code/releases/download/v$Version/CascadiaCode-$Version.zip"
+        $workDir     = Join-Path $env:TEMP "CascadiaCode-$Version"
+        $zipPath     = Join-Path $workDir 'CascadiaCode.zip'
+        New-Item -ItemType Directory -Path $workDir -Force | Out-Null
 
-# =============================================================================
-# Install Cascadia Code Nerd Fonts
-# =============================================================================
-- type: Microsoft.DSC.Transitional/PowerShellScript
-  name: InstallCascadiaCodeNerdFonts
-  dependsOn:
-    - PowerShell
-  properties:
-    getScript: |
-      $fontsDir    = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
-      $wantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
-      $regPath     = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
-      $regValues   = @(
-          (Get-ItemProperty $regPath -EA SilentlyContinue).PSObject.Properties |
-          Where-Object Name -notin 'PSPath','PSParentPath','PSChildName','PSDrive','PSProvider' |
-          Select-Object -ExpandProperty Value
-      )
-      $filesOk = -not ($wantedFonts | Where-Object { -not (Test-Path (Join-Path $fontsDir $_)) })
-      $regOk   = -not ($wantedFonts | Where-Object { $fn = $_; -not ($regValues | Where-Object { $_ -like "*\$fn" }) })
-      return @{ filesInstalled = $filesOk; registryEntries = $regOk }
-    testScript: |
-      $fontsDir    = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
-      $wantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
-      $regPath     = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
-      $regValues   = @(
-          (Get-ItemProperty $regPath -EA SilentlyContinue).PSObject.Properties |
-          Where-Object Name -notin 'PSPath','PSParentPath','PSChildName','PSDrive','PSProvider' |
-          Select-Object -ExpandProperty Value
-      )
-      $filesOk = -not ($wantedFonts | Where-Object { -not (Test-Path (Join-Path $fontsDir $_)) })
-      $regOk   = -not ($wantedFonts | Where-Object { $fn = $_; -not ($regValues | Where-Object { $_ -like "*\$fn" }) })
-      return ($filesOk -and $regOk)
-    setScript: |
-      $ErrorActionPreference = 'Stop'
+        $fontsDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
+        $regPath  = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
+        New-Item -ItemType Directory -Path $fontsDir -Force | Out-Null
 
-      $Version     = '2407.24'
-      $WantedFonts = @('CascadiaCodeNF.ttf', 'CascadiaMonoNF.ttf')
-      $zipUrl      = "https://github.com/microsoft/cascadia-code/releases/download/v$Version/CascadiaCode-$Version.zip"
-      $workDir     = Join-Path $env:TEMP "CascadiaCode-$Version"
-      $zipPath     = Join-Path $workDir 'CascadiaCode.zip'
-      New-Item -ItemType Directory -Path $workDir -Force | Out-Null
+        Write-Host "Downloading $zipUrl ..."
+        $ProgressPreference = 'SilentlyContinue'
+        Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
 
-      $fontsDir = Join-Path $env:LOCALAPPDATA 'Microsoft\Windows\Fonts'
-      $regPath  = 'HKCU:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts'
-      New-Item -ItemType Directory -Path $fontsDir -Force | Out-Null
+        $expectedHash = 'E67A68EE3386DB63F48B9054BD196EA752BC6A4EBB4DF35ADCE6733DA50C8474'
+        $actualHash   = (Get-FileHash $zipPath -Algorithm SHA256).Hash
+        if ($actualHash -ne $expectedHash) {
+            Remove-Item $zipPath -Force
+            throw "Hash mismatch for CascadiaCode-$Version.zip: expected $expectedHash, got $actualHash"
+        }
 
-      Write-Host "Downloading $zipUrl ..."
-      $ProgressPreference = 'SilentlyContinue'
-      Invoke-WebRequest -Uri $zipUrl -OutFile $zipPath -UseBasicParsing
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        Add-Type -AssemblyName System.Drawing
 
-      $expectedHash = 'E67A68EE3386DB63F48B9054BD196EA752BC6A4EBB4DF35ADCE6733DA50C8474'
-      $actualHash   = (Get-FileHash $zipPath -Algorithm SHA256).Hash
-      if ($actualHash -ne $expectedHash) {
-          Remove-Item $zipPath -Force
-          throw "Hash mismatch for CascadiaCode-$Version.zip: expected $expectedHash, got $actualHash"
-      }
+        $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
+        try {
+            foreach ($name in $WantedFonts) {
+                $entry = $zip.Entries | Where-Object { $_.Name -eq $name } | Select-Object -First 1
+                if (-not $entry) { Write-Warning "Not found in archive: $name"; continue }
 
-      Add-Type -AssemblyName System.IO.Compression.FileSystem
-      Add-Type -AssemblyName System.Drawing
+                $dest = Join-Path $fontsDir $name
+                Write-Host "Installing $name -> $dest"
+                [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $dest, $true)
 
-      $zip = [System.IO.Compression.ZipFile]::OpenRead($zipPath)
-      try {
-          foreach ($name in $WantedFonts) {
-              $entry = $zip.Entries | Where-Object { $_.Name -eq $name } | Select-Object -First 1
-              if (-not $entry) { Write-Warning "Not found in archive: $name"; continue }
+                $pfc = New-Object System.Drawing.Text.PrivateFontCollection
+                try {
+                    $pfc.AddFontFile($dest)
+                    $family = $pfc.Families[0].Name
+                } finally { $pfc.Dispose() }
 
-              $dest = Join-Path $fontsDir $name
-              Write-Host "Installing $name -> $dest"
-              [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $dest, $true)
+                $regName = "$family (TrueType)"
+                New-ItemProperty -Path $regPath -Name $regName -Value $dest -PropertyType String -Force | Out-Null
+                Write-Host "  registered as '$regName'"
+            }
+        }
+        finally {
+            $zip.Dispose()
+        }
 
-              $pfc = New-Object System.Drawing.Text.PrivateFontCollection
-              try {
-                  $pfc.AddFontFile($dest)
-                  $family = $pfc.Families[0].Name
-              } finally { $pfc.Dispose() }
+        Remove-Item $zipPath -Force
+        Write-Host "`nDone. Restart any running apps (terminal, editors) to pick up the new fonts."
+    metadata:
+      description: Install Cascadia Code Nerd Fonts
 
-              $regName = "$family (TrueType)"
-              New-ItemProperty -Path $regPath -Name $regName -Value $dest -PropertyType String -Force | Out-Null
-              Write-Host "  registered as '$regName'"
-          }
-      }
-      finally {
-          $zip.Dispose()
-      }
+  # =============================================================================
+  # Set Cascadia Mono NF as default Windows Terminal font
+  # NOTE: This cannot use a fragment. Fragments support adding profiles and color
+  # schemes, but not profiles.defaults (which applies settings across all profiles).
+  # Direct settings.json modification is the only available approach here.
+  # =============================================================================
+  - type: Microsoft.DSC.Transitional/PowerShellScript
+    name: SetCascadiaNfAsDefault
+    dependsOn:
+      - PowerShell
+      - InstallCascadiaCodeNerdFonts
+    properties:
+      getScript: |
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { return @{ fontFace = $null } }
+        $raw   = Get-Content $settingsPath -Raw
+        $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $json  = $clean | ConvertFrom-Json
+        return @{ fontFace = $json.profiles.defaults.font.face }
+      testScript: |
+        $fontFace     = 'Cascadia Mono NF'
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { return $true }
+        $raw   = Get-Content $settingsPath -Raw
+        $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $json  = $clean | ConvertFrom-Json
+        return ($json.profiles.defaults.font.face -eq $fontFace)
+      setScript: |
+        $fontFace     = 'Cascadia Mono NF'
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { throw 'Windows Terminal settings.json not found.' }
+        Write-Host "Using: $settingsPath"
 
-      Remove-Item $zipPath -Force
-      Write-Host "`nDone. Restart any running apps (terminal, editors) to pick up the new fonts."
-  metadata:
-    description: Install Cascadia Code Nerd Fonts
+        Copy-Item $settingsPath "$settingsPath.bak" -Force
 
-# =============================================================================
-# Set Cascadia Mono NF as default Windows Terminal font
-# NOTE: This cannot use a fragment. Fragments support adding profiles and color
-# schemes, but not profiles.defaults (which applies settings across all profiles).
-# Direct settings.json modification is the only available approach here.
-# =============================================================================
-- type: Microsoft.DSC.Transitional/PowerShellScript
-  name: SetCascadiaNfAsDefault
-  dependsOn:
-    - PowerShell
-    - InstallCascadiaCodeNerdFonts
-  properties:
-    getScript: |
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { return @{ fontFace = $null } }
-      $raw   = Get-Content $settingsPath -Raw
-      $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $json  = $clean | ConvertFrom-Json
-      return @{ fontFace = $json.profiles.defaults.font.face }
-    testScript: |
-      $fontFace     = 'Cascadia Mono NF'
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { return $true }
-      $raw   = Get-Content $settingsPath -Raw
-      $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $json  = $clean | ConvertFrom-Json
-      return ($json.profiles.defaults.font.face -eq $fontFace)
-    setScript: |
-      $fontFace     = 'Cascadia Mono NF'
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { throw 'Windows Terminal settings.json not found.' }
-      Write-Host "Using: $settingsPath"
+        $raw   = Get-Content $settingsPath -Raw
+        $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $json  = $clean | ConvertFrom-Json -AsHashtable
 
-      Copy-Item $settingsPath "$settingsPath.bak" -Force
+        if (-not $json.profiles)               { $json.profiles = [ordered]@{} }
+        if (-not $json.profiles.defaults)      { $json.profiles.defaults = [ordered]@{} }
+        if (-not $json.profiles.defaults.font) { $json.profiles.defaults.font = [ordered]@{} }
+        $json.profiles.defaults.font.face = $fontFace
 
-      $raw   = Get-Content $settingsPath -Raw
-      $clean = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $json  = $clean | ConvertFrom-Json -AsHashtable
+        $json | ConvertTo-Json -Depth 32 | Set-Content $settingsPath -Encoding utf8
+        Write-Host "Set font to '$fontFace'  (backup: $settingsPath.bak)"
+    metadata:
+      description: Making Cascadia fonts default
 
-      if (-not $json.profiles)               { $json.profiles = [ordered]@{} }
-      if (-not $json.profiles.defaults)      { $json.profiles.defaults = [ordered]@{} }
-      if (-not $json.profiles.defaults.font) { $json.profiles.defaults.font = [ordered]@{} }
-      $json.profiles.defaults.font.face = $fontFace
+  # =============================================================================
+  # Set PowerShell 7 as the default Windows Terminal profile
+  # NOTE: This cannot use a fragment. Fragments support adding profiles and color
+  # schemes, but not the top-level defaultProfile setting in settings.json.
+  # Direct settings.json modification is the only available approach here.
+  # =============================================================================
+  - type: Microsoft.DSC.Transitional/PowerShellScript
+    name: SetPowerShell7Default
+    dependsOn:
+      - PowerShell
+    properties:
+      getScript: |
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { return @{ defaultProfile = $null; ps7ProfileGuid = $null } }
+        $raw      = Get-Content $settingsPath -Raw
+        $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $settings = $clean | ConvertFrom-Json
+        $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
+        return @{ defaultProfile = $settings.defaultProfile; ps7ProfileGuid = $ps7.guid }
+      testScript: |
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { return $true }
+        $raw      = Get-Content $settingsPath -Raw
+        $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $settings = $clean | ConvertFrom-Json
+        $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
+        if (-not $ps7) { return $true }
+        return ($settings.defaultProfile -eq $ps7.guid)
+      setScript: |
+        $settingsPath = @(
+            Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
+                ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
+            "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
+        ) | Where-Object { Test-Path $_ } | Select-Object -First 1
+        if (-not $settingsPath) { return }
+        $raw      = Get-Content $settingsPath -Raw
+        $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
+        $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
+        $settings = $clean | ConvertFrom-Json
+        $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
+        if ($ps7 -and $settings.defaultProfile -ne $ps7.guid) {
+          $settings.defaultProfile = $ps7.guid
+          $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
+        }
+    metadata:
+      description: Set PowerShell 7 as the default Windows Terminal profile
 
-      $json | ConvertTo-Json -Depth 32 | Set-Content $settingsPath -Encoding utf8
-      Write-Host "Set font to '$fontFace'  (backup: $settingsPath.bak)"
-  metadata:
-    description: Making Cascadia fonts default
+  # =============================================================================
+  # Software — Applications, Tools, Runtimes, SDKs, CLIs, etc.
+  # =============================================================================
 
-# =============================================================================
-# Set PowerShell 7 as the default Windows Terminal profile
-# NOTE: This cannot use a fragment. Fragments support adding profiles and color
-# schemes, but not the top-level defaultProfile setting in settings.json.
-# Direct settings.json modification is the only available approach here.
-# =============================================================================
-- type: Microsoft.DSC.Transitional/PowerShellScript
-  name: ps7default
-  dependsOn:
-    - PowerShell
-  properties:
-    getScript: |
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { return @{ defaultProfile = $null; ps7ProfileGuid = $null } }
-      $raw      = Get-Content $settingsPath -Raw
-      $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $settings = $clean | ConvertFrom-Json
-      $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
-      return @{ defaultProfile = $settings.defaultProfile; ps7ProfileGuid = $ps7.guid }
-    testScript: |
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { return $true }
-      $raw      = Get-Content $settingsPath -Raw
-      $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $settings = $clean | ConvertFrom-Json
-      $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
-      if (-not $ps7) { return $true }
-      return ($settings.defaultProfile -eq $ps7.guid)
-    setScript: |
-      $settingsPath = @(
-          Get-ChildItem "$env:LOCALAPPDATA\Packages" -Filter 'Microsoft.WindowsTerminal*' -Directory -EA SilentlyContinue |
-              ForEach-Object { Join-Path $_.FullName 'LocalState\settings.json' }
-          "$env:LOCALAPPDATA\Microsoft\Windows Terminal\settings.json"
-      ) | Where-Object { Test-Path $_ } | Select-Object -First 1
-      if (-not $settingsPath) { return }
-      $raw      = Get-Content $settingsPath -Raw
-      $clean    = [regex]::Replace($raw, '/\*[\s\S]*?\*/', '')
-      $clean    = [regex]::Replace($clean, '(?m)^\s*//.*$', '')
-      $settings = $clean | ConvertFrom-Json
-      $ps7      = $settings.profiles.list | Where-Object { $_.source -eq 'Windows.Terminal.PowershellCore' -or $_.name -eq 'PowerShell' } | Select-Object -First 1
-      if ($ps7 -and $settings.defaultProfile -ne $ps7.guid) {
-        $settings.defaultProfile = $ps7.guid
-        $settings | ConvertTo-Json -Depth 10 | Set-Content $settingsPath -Encoding UTF8
-      }
-  metadata:
-    description: Set PowerShell 7 as the default Windows Terminal profile
+  # Browsers
+  # -----------------------------------------------------------------------------
+  - name: Google.Chrome
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Google.Chrome"
+      source: "winget"
 
-# =============================================================================
-# Software — Applications, Tools, Runtimes, SDKs, CLIs, etc.
-# =============================================================================
-- name: Google.Chrome
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Google.Chrome"
-    source: "winget"
+  - name: Microsoft.Edge
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.Edge"
+      source: "winget"
 
-- name: Microsoft.Edge
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.Edge"
-    source: "winget"
+  # Utilities and Tools
+  # -----------------------------------------------------------------------------
+  - name: PowerToys
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.PowerToys"
+      source: "winget"
 
-- name: Git
-  type: Microsoft.WinGet/Package
-  properties:
-    id: Git.Git
-    source: winget
+  - name: 7zip
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "7zip.7zip"
+      source: "winget"
 
-- name: Coreutils
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - PowerShell
-  properties:
-    id: "Microsoft.Coreutils"
-    source: "winget"
+  - name: JGraph.Draw
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "JGraph.Draw"
+      source: "winget"
 
-- name: PowerToys
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.PowerToys"
-    source: "winget"
+  # Developer Tools
+  # -----------------------------------------------------------------------------
+  - name: Coreutils
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - PowerShell
+    properties:
+      id: "Microsoft.Coreutils"
+      source: "winget"
 
-- type: Microsoft.WinGet/Package
-  name: GitHubCLI
-  dependsOn:
-  - Git
-  properties:
-    id: "GitHub.Cli"
-    source: "winget"
+  - name: Git
+    type: Microsoft.WinGet/Package
+    properties:
+      id: Git.Git
+      source: "winget"
 
-- type: Microsoft.DSC.Transitional/RunCommandOnSet
-  name: VisualStudioCode
-  properties:
-    executable: winget
-    arguments:
-      - install
-      - --id
-      - Microsoft.VisualStudioCode
-      - -e
-      - --override
-      - /VERYSILENT /NORESTART /MERGETASKS=!runcode,addcontextmenufiles,addcontextmenufolders
+  - name: OhMyPosh
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - PowerShell
+    properties:
+      id: "JanDeDobbeleer.OhMyPosh"
+      source: "winget"
 
-- name: NodeJS
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "OpenJS.NodeJS.LTS"
-    source: "winget"
+  - type: Microsoft.WinGet/Package
+    name: GitHubCLI
+    dependsOn:
+      - Git
+    properties:
+      id: "GitHub.Cli"
+      source: "winget"
 
-- name: NVM
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - NodeJS
-  properties:
-    id: "CoreyButler.NVMforWindows"
-    source: "winget"
+  - type: Microsoft.DSC.Transitional/RunCommandOnSet
+    name: VisualStudioCode
+    properties:
+      executable: winget
+      arguments:
+        - install
+        - --id
+        - Microsoft.VisualStudioCode
+        - -e
+        - --override
+        - /VERYSILENT /NORESTART /MERGETASKS=!runcode,addcontextmenufiles,addcontextmenufolders
 
-- name: Python
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Python.Python.3.14"
-    source: "winget"
+  - name: NodeJS
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "OpenJS.NodeJS.LTS"
+      source: "winget"
 
-- name: uv
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - Python
-  properties:
-    id: "astral-sh.uv"
-    source: "winget"
+  - name: NVM
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - NodeJS
+    properties:
+      id: "CoreyButler.NVMforWindows"
+      source: "winget"
 
-- name: JGraph.Draw
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "JGraph.Draw"
-    source: "winget"
+  - name: Python
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Python.Python.3.14"
+      source: "winget"
 
-- name: 7zip
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "7zip.7zip"
-    source: "winget"
+  - name: uv
+    type: Microsoft.WinGet/Package
+    dependsOn:
+      - Python
+    properties:
+      id: "astral-sh.uv"
+      source: "winget"
 
-- name: OhMyPosh
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - PowerShell
-  properties:
-    id: "JanDeDobbeleer.OhMyPosh"
-    source: "winget"
+  # Containers and Virtualization
+  # -----------------------------------------------------------------------------
+  - name: WSL
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.WSL"
+      source: "winget"
 
-# Containers and Virtualization
-- name: WSL
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.WSL"
-    source: "winget"
+  #- name: Podman
+  #  type: Microsoft.WinGet/Package
+  #  dependsOn:
+  #  - WSL
+  #  properties:
+  #    id: "RedHat.Podman"
+  #    source: "winget"
+  #
+  #- name: PodmanDesktop
+  #  type: Microsoft.WinGet/Package
+  #  dependsOn:
+  #  - WSL
+  #  - Podman
+  #  properties:
+  #    id: "RedHat.Podman-Desktop"
+  #    source: "winget"
 
-- name: Podman
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - WSL
-  properties:
-    id: "RedHat.Podman"
-    source: "winget"
+  # AI Tools
+  # -----------------------------------------------------------------------------
+  - name: GitHubCopilot
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "GitHub.Copilot"
+      source: "winget"
 
-- name: PodmanDesktop
-  type: Microsoft.WinGet/Package
-  dependsOn:
-  - WSL
-  - Podman
-  properties:
-    id: "RedHat.Podman-Desktop"
-    source: "winget"
+  - name: Ollama
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Ollama.Ollama"
+      source: "winget"
 
-# AI Tools
-- name: GitHubCopilot
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "GitHub.Copilot"
-    source: "winget"
+  - name: IntelligentTerminal
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Microsoft.IntelligentTerminal"
+      source: "winget"
 
-- name: IntelligentTerminal
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Microsoft.IntelligentTerminal"
-    source: "winget"
+  - name: OpenCode
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "SST.OpenCode"
+      source: "winget"
 
-- name: OpenCode
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "SST.OpenCode"
-    source: "winget"
+  - name: Jan
+    type: Microsoft.WinGet/Package
+    properties:
+      id: "Jan.Jan"
+      source: "winget"
 
-- name: Jan
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Jan.Jan"
-    source: "winget"
+  # =============================================================================
+  # Registry — HKLM keys (elevated, native v3 Microsoft.Windows/Registry)
+  # =============================================================================
 
-# =============================================================================
-# Registry — HKLM keys (elevated, native v3 Microsoft.Windows/Registry)
-# =============================================================================
-# OS
-- type: Microsoft.Windows/Registry
-  name: Sudo
-  properties:
-    keyPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Sudo
-    valueName: Enabled
-    valueData:
-      DWord: 3
-  metadata:
-    description: Enable Sudo in inline mode
-    securityContext: elevated
+  # Color and Dark Mode
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: DarkThemeApps
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+      valueName: AppsUseLightTheme
+      valueData:
+        DWord: 0
+    metadata:
+      description: Set apps theme to dark (disable light theme)
 
-- type: Microsoft.Windows/Registry
-  name: LongPaths
-  properties:
-    keyPath: HKLM\SYSTEM\CurrentControlSet\Control\FileSystem
-    valueName: LongPathsEnabled
-    valueData:
-      DWord: 1
-  metadata:
-    description: Enable Win32 long path support
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: DarkThemeSystem
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize
+      valueName: SystemUsesLightTheme
+      valueData:
+        DWord: 0
+    metadata:
+      description: Set system theme to dark (disable light theme)
 
-# Lock Screen and Login
-- type: Microsoft.Windows/Registry
-  name: DisableLockScreen
-  properties:
-    keyPath: HKLM\SOFTWARE\Policies\Microsoft\Windows\Personalization
-    valueName: NoLockScreen
-    valueData:
-      DWord: 1
-  metadata:
-    description: Disable Lock Screen completely (jump directly to login)
-    securityContext: elevated
+  #- type: Microsoft.Windows/Registry
+  #  name: AccentColorEnable
+  #  properties:
+  #    keyPath: HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize
+  #    valueName: ColorPrevalence
+  #    valueData:
+  #      DWord: 1
+  #  metadata:
+  #    description: Enable accent color on Start and taskbar
+  #
+  #- type: Microsoft.Windows/Registry
+  #  name: AccentColorValue
+  #  properties:
+  #    keyPath: HKCU\Software\Microsoft\Windows\CurrentVersion\Themes\Accent
+  #    valueName: AccentColor
+  #    valueData:
+  #      DWord: 0xFF008F00
+  #  metadata:
+  #    description: Set Windows accent color (ARGB)
 
-# File Explorer and Desktop
-- type: Microsoft.Windows/Registry
-  name: ShowFileExtensions
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: HideFileExt
-    valueData:
-      DWord: 0
-  metadata:
-    description: Show file extensions in Explorer
-    securityContext: elevated
+  # OS
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: Sudo
+    properties:
+      keyPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Sudo
+      valueName: Enabled
+      valueData:
+        DWord: 3
+    metadata:
+      description: Enable Sudo in inline mode
+      securityContext: elevated
 
-- type: Microsoft.Windows/Registry
-  name: ShowHiddenFiles
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: Hidden
-    valueData:
-      DWord: 1
-  metadata:
-    description: Show hidden files in Explorer
-    securityContext: elevated
+  # Developer Mode: AllowDevelopmentWithoutDevLicense=1 (replaces
+  # Microsoft.Windows.Settings/WindowsSettings DeveloperMode:true)
+  #- type: Microsoft.Windows/Registry
+  #  name: DeveloperMode
+  #  properties:
+  #    keyPath: HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock
+  #    valueName: AllowDevelopmentWithoutDevLicense
+  #    valueData:
+  #      DWord: 1
+  #  metadata:
+  #    description: Enable Developer Mode (sideload + dev features)
+  #    securityContext: elevated
 
-- type: Microsoft.Windows/Registry
-  name: FullPathTitlebar
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: FullPathAddress
-    valueData:
-      DWord: 1
-  metadata:
-    description: Show full path in Explorer titlebar
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: LongPaths
+    properties:
+      keyPath: HKLM\SYSTEM\CurrentControlSet\Control\FileSystem
+      valueName: LongPathsEnabled
+      valueData:
+        DWord: 1
+    metadata:
+      description: Enable Win32 long path support
+      securityContext: elevated
 
-- type: Microsoft.Windows/Registry
-  name: OpenThisPC
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: LaunchTo
-    valueData:
-      DWord: 1
-  metadata:
-    description: Open File Explorer to This PC
-    securityContext: elevated
+  # Lock Screen
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: DisableLockScreen
+    properties:
+      keyPath: HKLM\SOFTWARE\Policies\Microsoft\Windows\Personalization
+      valueName: NoLockScreen
+      valueData:
+        DWord: 1
+    metadata:
+      description: Disable Lock Screen completely (jump directly to login)
+      securityContext: elevated
 
-- type: Microsoft.Windows/Registry
-  name: FrequentFolders
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: ShowFrequent
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable frequent folders in Quick Access
-    securityContext: elevated
+  # File Explorer and Desktop
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: ShowFileExtensions
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: HideFileExt
+      valueData:
+        DWord: 0
+    metadata:
+      description: Show file extensions in Explorer
 
-- type: Microsoft.Windows/Registry
-  name: FrequentFiles
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
-    valueName: ShowRecent
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable frequent files in Quick Access
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: ShowHiddenFiles
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: Hidden
+      valueData:
+        DWord: 1
+    metadata:
+      description: Show hidden files in Explorer
 
-- type: Microsoft.Windows/Registry
-  name: RecommendedFiles
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
-    valueName: ShowCloudFilesInQuickAccess
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable recommended/cloud files in Quick Access
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: FullPathTitlebar
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: FullPathAddress
+      valueData:
+        DWord: 1
+    metadata:
+      description: Show full path in Explorer titlebar
 
-- type: Microsoft.Windows/Registry
-  name: GitCodeFolders
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: NavPaneShowVersionControl
-    valueData:
-      DWord: 1
-  metadata:
-    description: Enable Git integration in File Explorer
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: OpenThisPC
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: LaunchTo
+      valueData:
+        DWord: 1
+    metadata:
+      description: Open File Explorer to This PC
 
-- type: Microsoft.Windows/Registry
-  name: TipsOff
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: ShowSyncProviderNotifications
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable sync provider notifications (tips)
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: FrequentFolders
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: ShowFrequent
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable frequent folders in Quick Access
 
-# Notifications and Lock Screen
-- type: Microsoft.Windows/Registry
-  name: DoNotDisturb
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings
-    valueName: NOC_GLOBAL_SETTING_TOASTS_ENABLED
-    valueData:
-      DWord: 0
-  metadata:
-    description: Enable Do Not Disturb (disable all notifications)
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: FrequentFiles
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+      valueName: ShowRecent
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable frequent files in Quick Access
 
-# Taskbar
-- type: Microsoft.Windows/Registry
-  name: TaskbarHideWidgets
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: TaskbarDa
-    valueData:
-      DWord: 0
-  metadata:
-    description: Hide Widgets button on the taskbar
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: RecommendedFiles
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer
+      valueName: ShowCloudFilesInQuickAccess
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable recommended/cloud files in Quick Access
 
-- type: Microsoft.Windows/Registry
-  name: BluetoothOff
-  properties:
-    keyPath: HKCU\Control Panel\Bluetooth
-    valueName: Notification Area Icon
-    valueData:
-      DWord: 0
-  metadata:
-    description: Hide Bluetooth icon in taskbar notification area
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: GitCodeFolders
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: NavPaneShowVersionControl
+      valueData:
+        DWord: 1
+    metadata:
+      description: Enable Git integration in File Explorer
 
-- type: Microsoft.Windows/Registry
-  name: EndTask
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: TaskbarEndTask
-    valueData:
-      DWord: 1
-  metadata:
-    description: Enable "End Task" on right-click of taskbar icons  
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: TipsOff
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: ShowSyncProviderNotifications
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable sync provider notifications (tips)
 
-# Start and Search
-- type: Microsoft.Windows/Registry
-  name: WebSearchOff
-  properties:
-    keyPath: HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer
-    valueName: DisableSearchBoxSuggestions
-    valueData:
-      DWord: 1
-  metadata:
-    description: Disable web search in Start/Search
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: ShowDesktopIcons
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: HideIcons
+      valueData:
+        DWord: 0
+    metadata:
+      description: Show desktop icons
 
-- type: Microsoft.Windows/Registry
-  name: SearchHightlightOff
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings
-    valueName: IsDynamicSearchBoxEnabled
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable Show search highlights
-    securityContext: elevated
+  # Notifications
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: DoNotDisturb
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings
+      valueName: NOC_GLOBAL_SETTING_TOASTS_ENABLED
+      valueData:
+        DWord: 0
+    metadata:
+      description: Enable Do Not Disturb (disable all notifications)
 
-- type: Microsoft.Windows/Registry
-  name: StartRecommendations
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
-    valueName: Start_IrisRecommendations
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable Start menu recommendations
-    securityContext: elevated
+  # Taskbar
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: TaskbarHideWidgets
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: TaskbarDa
+      valueData:
+        DWord: 0
+    metadata:
+      description: Hide Widgets button on the taskbar
 
-# Services and Features
-- type: Microsoft.Windows/Registry
-  name: WidgetServiceOff
-  properties:
-    keyPath: HKLM\SOFTWARE\Policies\Microsoft\Dsh
-    valueName: AllowNewsAndInterests
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable Widget service
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: BluetoothOff
+    properties:
+      keyPath: HKCU\Control Panel\Bluetooth
+      valueName: Notification Area Icon
+      valueData:
+        DWord: 0
+    metadata:
+      description: Hide Bluetooth icon in taskbar notification area
 
-# Edge
-- type: Microsoft.Windows/Registry
-  name: EdgeOOBE
-  dependsOn:
-  - Microsoft.Edge
-  properties:
-    keyPath: HKLM\SOFTWARE\Policies\Microsoft\Edge
-    valueName: HideFirstRunExperience
-    valueData:
-      DWord: 1
-  metadata:
-    description: Disable Edge first-run experience
-    securityContext: elevated
+  - type: Microsoft.Windows/Registry
+    name: EndTask
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: TaskbarEndTask
+      valueData:
+        DWord: 1
+    metadata:
+      description: Enable "End Task" on right-click of taskbar icons
 
-# PowerToys
-- type: Microsoft.Windows/Registry
-  name: PowerToysAOT
-  dependsOn:
-  - PowerToys
-  properties:
-    keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\PowerToys
-    valueName: Enabled
-    valueData:
-      DWord: 0
-  metadata:
-    description: Disable PowerToys AOT notifications
+  # Start and Search
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: TaskbarSearchIconOnly
+    properties:
+      keyPath: HKCU\Software\Microsoft\Windows\CurrentVersion\Search
+      valueName: SearchboxTaskbarMode
+      valueData:
+        DWord: 1 # 0 = Hidden, 1 = Search icon only, 2 = Full search box
+    metadata:
+      description: Set taskbar search to icon only
 
-# =============================================================================
-# Software Configuration
-# =============================================================================
+  - type: Microsoft.Windows/Registry
+    name: WebSearchOff
+    properties:
+      keyPath: HKCU\SOFTWARE\Policies\Microsoft\Windows\Explorer
+      valueName: DisableSearchBoxSuggestions
+      valueData:
+        DWord: 1
+    metadata:
+      description: Disable web search in Start/Search
+
+  - type: Microsoft.Windows/Registry
+    name: SearchHighlightOff
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\SearchSettings
+      valueName: IsDynamicSearchBoxEnabled
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable Show search highlights
+
+  - type: Microsoft.Windows/Registry
+    name: StartRecommendations
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+      valueName: Start_IrisRecommendations
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable Start menu recommendations
+
+  - type: Microsoft.Windows/Registry
+    name: HideRecommendedSection
+    properties:
+      keyPath: HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer
+      valueName: HideRecommendedSection
+      valueData:
+        DWord: 1
+    metadata:
+      description: Hide Recommended section in Start menu
+      securityContext: elevated
+
+  # Services and Features
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: WidgetServiceOff
+    properties:
+      keyPath: HKLM\SOFTWARE\Policies\Microsoft\Dsh
+      valueName: AllowNewsAndInterests
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable Widget service
+      securityContext: elevated
+
+  # PowerToys
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: PowerToysAOT
+    dependsOn:
+      - PowerToys
+    properties:
+      keyPath: HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Notifications\Settings\PowerToys
+      valueName: Enabled
+      valueData:
+        DWord: 0
+    metadata:
+      description: Disable PowerToys AOT notifications
+
+  # Edge
+  # ------------------------------------------------------------------------------
+  - type: Microsoft.Windows/Registry
+    name: EdgeOOBE
+    dependsOn:
+      - Microsoft.Edge
+    properties:
+      keyPath: HKLM\SOFTWARE\Policies\Microsoft\Edge
+      valueName: HideFirstRunExperience
+      valueData:
+        DWord: 1
+    metadata:
+      description: Disable Edge first-run experience
+      securityContext: elevated
+
+  # =============================================================================
+  # Software Configuration
+  # =============================================================================
+
+  # Visual Studio Code Settings (settings.json)
+  # ------------------------------------------------------------------------------
+
+  # NPM && NPM Global Packages
+  # ------------------------------------------------------------------------------
