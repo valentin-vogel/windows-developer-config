@@ -11,130 +11,207 @@ resources:
 # Software
 # =============================================================================
 
-# Browsers
+# Browsers & Communication
+# -----------------------------------------------------------------------------
+- name: Brave
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Brave.Brave"
+    source: "winget"
+
+- name: Mozilla.Thunderbird
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Mozilla.Thunderbird"
+    source: "winget"
+
+- name: Microsoft.Teams
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Microsoft.Teams"
+    source: "winget"
+
+# Developer Tools
+# -----------------------------------------------------------------------------
+- name: Postman
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Postman.Postman"
+    source: "winget"
+
+- name: Kind
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Kubernetes.kind"
+    source: "winget"
+
+- name: Helm
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Helm.Helm"
+    source: "winget"
+
+- name: DBeaver
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "DBeaver.DBeaver.Community"
+    source: "winget"
+
+- name: Pulumi
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Pulumi.Pulumi"
+    source: "winget"
+
+- name: Terraform
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Hashicorp.Terraform"
+    source: "winget"
+
+# AI Tools
+# -----------------------------------------------------------------------------
+- name: Cursor 
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Anysphere.Cursor"
+    source: "winget"
+
+- name: Windsurf
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Codeium.Windsurf"
+    source: "winget"
+
+- name: Claude
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Anthropic.Claude"
+    source: "winget"
+
+- name: GitHub.CopilotApp
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "GitHub.CopilotApp"
+    source: "winget"
+
+# Entertainment
+# -----------------------------------------------------------------------------
+- name: Spotify.Spotify
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Spotify.Spotify"
+    source: "winget"
+
+- name: Ubisoft.Connect
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Ubisoft.Connect"
+    source: "winget"
+
+- name: Valve.Steam
+  type: Microsoft.WinGet/Package
+  properties:
+    source: "winget"
+
+# Utilities & Small Tools
+# -----------------------------------------------------------------------------
+- name: 7zip
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "7zip.7zip"
+    source: "winget"
+
+- name: Logitech.OptionsPlus
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Logitech.OptionsPlus"
+    source: "winget"
+
+- name: WireGuard
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "WireGuard.WireGuard"
+    source: "winget"
+
+- name: Gyan.FFmpeg
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Gyan.FFmpeg"
+    source: "winget"
+
+- name: RaspberryPiFoundation.RaspberryPiImager
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "RaspberryPiFoundation.RaspberryPiImager"
+    source: "winget"
+
+- name: VideoLAN.VLC
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "VideoLAN.VLC"
+    source: "winget"
+
+- name: Governikus.AusweisApp
+  type: Microsoft.WinGet/Package
+  properties:
+    id: "Governikus.AusweisApp"
+    source: "winget"
+
+# Not needed anymore, because of available online tools
+# - name: geeksoftwareGmbH.PDF24Creator
+#   type: Microsoft.WinGet/Package
+#   properties:
+#     id: "geeksoftwareGmbH.PDF24Creator"
+#     source: "winget"
+
+# Others
 # -----------------------------------------------------------------------------
 - name: JGraph.Draw
   type: Microsoft.WinGet/Package
   properties:
     id: "JGraph.Draw"
     source: "winget"
-- name: 7zip
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "7zip.7zip"
-    source: "winget"
+
 - name: FoxitReader
   type: Microsoft.WinGet/Package
   properties:
     id: "Foxit.FoxitReader"
     source: "winget"
-- name: Logitech.OptionsPlus
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Logitech.OptionsPlus"
-    source: "winget"
-- name: Brave
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Brave.Brave"
-    source: "winget"
-- name: WireGuard
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "WireGuard.WireGuard"
-    source: "winget"
+
 - name: Affinity
   type: Microsoft.WinGet/Package
   properties:
     id: "Canva.Affinity"
     source: "winget"
-- name: Cursor 
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Anysphere.Cursor"
-    source: "winget"
-- name: Windsurf
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Codeium.Windsurf"
-    source: "winget"
+
 - name: Xmind
   type: Microsoft.WinGet/Package
   properties:
     id: "Xmind.Xmind"
     source: "winget"
-- name: Spotify.Spotify
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Spotify.Spotify"
-    source: "winget"
-- name: Postman
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Postman.Postman"
-    source: "winget"
-- name: Kubernetes.kind
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Kubernetes.kind"
-    source: "winget"
-- name: Helm
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Helm.Helm"
-    source: "winget"
-- name: DBeaver.DBeaver.Community
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "DBeaver.DBeaver.Community"
-    source: "winget"
-- name: Gyan.FFmpeg
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Gyan.FFmpeg"
-    source: "winget"
-- name: Anthropic.Claude
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Anthropic.Claude"
-    source: "winget"
-- name: GitHub.CopilotApp
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "GitHub.CopilotApp"
-    source: "winget"
-- name: Ubisoft.Connect
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Ubisoft.Connect"
-    source: "winget"
-- name: Valve.Steam
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "Valve.Steam"
-    source: "winget"
+
 - name: Google.GoogleDrive
   type: Microsoft.WinGet/Package
   properties:
     id: "Google.GoogleDrive"
     source: "winget"
+
 - name: KeePassXCTeam.KeePassXC
   type: Microsoft.WinGet/Package
   properties:
     id: "KeePassXCTeam.KeePassXC"
     source: "winget"
-- name: Pulumi.Pulumi
+
+- name: Audacity.Audacity
   type: Microsoft.WinGet/Package
   properties:
-    id: "Pulumi.Pulumi"
+    id: "Audacity.Audacity"
     source: "winget"
-- name: RaspberryPiFoundation.RaspberryPiImager
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "RaspberryPiFoundation.RaspberryPiImager"
-    source: "winget"
-- name: VideoLAN.VLC
-  type: Microsoft.WinGet/Package
-  properties:
-    id: "VideoLAN.VLC"
-    source: "winget"
+
+## No longer needed, because of PowerToys Rename Feature
+#- name: HulubuluSoftware.AdvancedRenamer
+#  type: Microsoft.WinGet/Package
+#  properties:
+#    id: "HulubuluSoftware.AdvancedRenamer"
+#    source: "winget"
