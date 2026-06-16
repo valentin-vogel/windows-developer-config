@@ -365,22 +365,22 @@ resources:
       id: "Microsoft.WSL"
       source: "winget"
 
-  #- name: Podman
-  #  type: Microsoft.WinGet/Package
-  #  dependsOn:
-  #  - WSL
-  #  properties:
-  #    id: "RedHat.Podman"
-  #    source: "winget"
-  #
-  #- name: PodmanDesktop
-  #  type: Microsoft.WinGet/Package
-  #  dependsOn:
-  #  - WSL
-  #  - Podman
-  #  properties:
-  #    id: "RedHat.Podman-Desktop"
-  #    source: "winget"
+  - name: Podman
+    type: Microsoft.WinGet/Package
+    dependsOn:
+    - WSL
+    properties:
+      id: "RedHat.Podman"
+      source: "winget"
+  
+  - name: PodmanDesktop
+    type: Microsoft.WinGet/Package
+    dependsOn:
+    - WSL
+    - Podman
+    properties:
+      id: "RedHat.Podman-Desktop"
+      source: "winget"
 
   # AI Tools
   # -----------------------------------------------------------------------------
@@ -758,6 +758,7 @@ resources:
         - --install
         - -d
         - Ubuntu-26.04
+        - --no-launch
     metadata:
       description: Install Ubuntu 26.04 for WSL if not already present
       winget:
