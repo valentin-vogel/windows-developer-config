@@ -2,7 +2,7 @@
 
 A WinGet Configuration (DSC) file that sets up a clean, lightweight, distraction-free developer workstation. The goal is a PC state that devs actually love using: no clutter, no noise, just the tools you need.
 
-The flow is a single DSC document (`dev.v3.winget`) that handles everything end-to-end: OS tweaks, apps, fonts, shell prompt, and the WSL platform + Ubuntu.
+The flow is a single DSC document (`dev.winget`) that handles everything end-to-end: OS tweaks, apps, fonts, shell prompt, and the WSL platform + Ubuntu.
 
 ---
 
@@ -10,7 +10,7 @@ The flow is a single DSC document (`dev.v3.winget`) that handles everything end-
 
 - **A PC devs actually want to use.** Clean Explorer, dark theme, no pop-ups, no recommendations, no widgets. Just your code and your tools.
 - **Cloud PC parity.** Same tooling, OS settings, and policies as the current Cloud PC image.
-- **One command.** `winget configure -f dev-config.winget --accept-configuration-agreements --disable-interactivity` takes a fresh Windows machine to fully ready, including WSL + Ubuntu (with an auto-resume across the required reboot).
+- **One command.** `winget configure -f dev.winget --accept-configuration-agreements --disable-interactivity` takes a fresh Windows machine to fully ready, including WSL + Ubuntu (with an auto-resume across the required reboot).
 - **Idempotent.** Safe to re-run on existing machines to apply updates or fix drift. Every resource has a `testScript` or DSC-native idempotency.
 
 ## Prerequisites
@@ -24,10 +24,10 @@ The flow is a single DSC document (`dev.v3.winget`) that handles everything end-
 **Full setup (recommended):**
 
 ```powershell
-winget configure -f dev-config.winget --accept-configuration-agreements --disable-interactivity
+winget configure -f dev.winget --accept-configuration-agreements --disable-interactivity
 ```
 
-This is the canonical invocation documented in the header of `dev-config.winget`.
+This is the canonical invocation documented in the header of `dev.winget`.
 
 **What to expect:**
 
@@ -45,7 +45,6 @@ The configuration is idempotent, so it is safe to re-run after reboot or at any 
 - **~24 registry settings** for theme/OS, Explorer, Taskbar, Search, Start, Notifications, Edge, Sudo, and the Widget service.
 - **Cascadia Code & Cascadia Mono Nerd Fonts** downloaded from the `microsoft/cascadia-code` GitHub release and registered per-user.
 - **5 script resources** beyond the WSL phases:
-  - `ElevationCheck` — re-launches winget elevated if not already admin.
   - `darkTheme` — applies the built-in `dark.theme` to switch to dark mode.
   - `InstallCascadiaCodeNerdFonts` — downloads and installs the Nerd Font variants of Cascadia Code/Mono.
   - `SetCascadiaNfAsDefault` — sets `Cascadia Mono NF` as the default font face in Windows Terminal's `settings.json`.
@@ -56,7 +55,7 @@ The configuration is idempotent, so it is safe to re-run after reboot or at any 
 
 ## Configuration details
 
-All resources are dscv3 (`$schema: .../DSC/main/schemas/2023/08/config/document.json`, `metadata.winget.processor.identifier: dscv3`). Every resource that touches HKLM or runs elevated tools depends on `ElevationCheck`.
+All resources are dscv3 (`$schema: .../DSC/main/schemas/2023/08/config/document.json`, `metadata.winget.processor.identifier: dscv3`).
 
 Package resources use `Microsoft.WinGet/Package` with `source: winget` and `useLatest: true` (except `Python.Python.3.14`, `Microsoft.dotnet.SDK.10`, and `OpenJS.NodeJS.LTS`, which are pinned by id).
 
@@ -75,8 +74,8 @@ All app resources that need WSL present depend on `InstallUbuntu` so the OS work
 
 | Resource name | Package id | Notes |
 | --- | --- | --- |
-| `PowerShell` | `Microsoft.PowerShell` | Direct dependency on `ElevationCheck`. |
-| `Git` | `Git.Git` | Depends on `ElevationCheck` + `InstallUbuntu`. |
+| `PowerShell` | `Microsoft.PowerShell` | |
+| `Git` | `Git.Git` | `InstallUbuntu`. |
 | `GitHubCLI` | `GitHub.Cli` | Depends on `Git` + `InstallUbuntu`. |
 | `GitHubCopilot` | `GitHub.Copilot` | Depends on `Git` + `InstallUbuntu`. |
 | `VSCode` | `Microsoft.VisualStudioCode` | |
