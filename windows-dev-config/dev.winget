@@ -749,7 +749,7 @@ resources:
   # WSL
   # ------------------------------------------------------------------------------
   - type: Microsoft.DSC.Transitional/RunCommandOnSet
-    name: InstallUbuntu2404
+    name: InstallUbuntu2604
     dependsOn:
       - WSL
     properties:
@@ -757,9 +757,9 @@ resources:
       arguments:
         - --install
         - -d
-        - Ubuntu-24.04
+        - Ubuntu-26.04
     metadata:
-      description: Install Ubuntu 24.04 for WSL if not already present
+      description: Install Ubuntu 26.04 for WSL if not already present
       winget:
         securityContext: elevated
 
